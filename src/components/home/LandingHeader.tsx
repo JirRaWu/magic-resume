@@ -4,7 +4,7 @@ import { useTranslations } from "@/i18n/compat/client";
 import { useLocaleSwitch } from "@/hooks/useLocaleSwitch";
 import Link from "@/lib/link";
 import Logo from "@/components/shared/Logo";
-import { GitHubStars } from "@/components/shared/GitHubStars";
+import { LandingGitHubStars } from "./LandingGitHubStars";
 import { ContactPopover } from "@/components/shared/ContactPopover";
 
 export default function LandingHeader() {
@@ -42,16 +42,30 @@ export default function LandingHeader() {
           >
             {locale === "zh" ? "EN" : "中"}
           </Link>
+          {locale === "zh" && (
+            <div className="landing-header-github">
+              <Link
+                href="/zh/offerin"
+                target="_blank"
+                rel="noopener"
+                className="landing-github-button cursor-pointer px-3 gap-1"
+                title="AI 面试助手"
+              >
+                <span>AI 面试助手</span>
+                <ArrowUpRight size={13} className="text-muted-foreground/60 -mr-0.5" />
+              </Link>
+            </div>
+          )}
           <ContactPopover
             renderWrapper={(popover) => (
               <div className="landing-header-github">{popover}</div>
             )}
           />
           <div className="landing-header-github">
-            <GitHubStars appearance="landing" />
+            <LandingGitHubStars />
           </div>
           <Link
-            href="/app/dashboard"
+            href="/app/dashboard/resumes"
             className="landing-button landing-nav-cta"
           >
             {t("start")}
@@ -74,9 +88,21 @@ export default function LandingHeader() {
           id="landing-menu"
           aria-label={t("nav.label")}
         >
+          {locale === "zh" && (
+            <Link
+              href="/zh/offerin"
+              target="_blank"
+              rel="noopener"
+              className="landing-github-button cursor-pointer w-full justify-center gap-1"
+              onClick={() => setOpen(false)}
+            >
+              <span>AI 面试助手</span>
+              <ArrowUpRight size={14} className="text-muted-foreground/60" />
+            </Link>
+          )}
           <ContactPopover />
-          <GitHubStars appearance="landing" />
-          <Link href="/app/dashboard" className="landing-button">
+          <LandingGitHubStars />
+          <Link href="/app/dashboard/resumes" className="landing-button">
             {t("start")}
             <ArrowUpRight size={16} />
           </Link>

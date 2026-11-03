@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import * as Icons from "lucide-react";
+import { getResumeIcon } from "../../shared/resumeIcons";
 import { cn, formatDateString } from "@/lib/utils";
 import { BasicInfo, getBorderRadiusValue, GlobalSettings } from "@/types/resume";
 import { ResumeTemplate } from "@/types/template";
@@ -24,7 +24,7 @@ const BaseInfo = ({ basic = {} as BasicInfo, globalSettings, template }: BaseInf
     const layout = basic?.layout || "left";
 
     const getIcon = (iconName: string | undefined) => {
-        const IconComponent = Icons[iconName as keyof typeof Icons] as React.ElementType;
+        const IconComponent = getResumeIcon(iconName);
         return IconComponent ? (
             <span className="inline-flex h-[1.5em] shrink-0 items-center">
                 <IconComponent className="h-4 w-4 shrink-0" />
@@ -96,13 +96,13 @@ const BaseInfo = ({ basic = {} as BasicInfo, globalSettings, template }: BaseInf
                             {useIconMode ? (
                                 <div className="flex min-w-0 items-start gap-1" style={{ color: "#fff" }}>
                                     {getIcon(item.icon)}
-                                    {item.key === "email" ? <a href={`mailto:${item.value}`} className="min-w-0 underline [overflow-wrap:anywhere]" style={{ color: "#fff" }}>{item.value}</a> : customFieldHref ? <a href={customFieldHref} target="_blank" rel="noopener noreferrer" className="min-w-0 underline [overflow-wrap:anywhere]" style={{ color: "#fff" }}>{item.value}</a> : <span className="min-w-0 [overflow-wrap:anywhere]" style={{ color: "#fff" }}>{item.value}</span>}
+                                    {item.key === "email" ? <a href={`mailto:${item.value}`} className={cn("min-w-0 [overflow-wrap:anywhere]", basic.emailUnderline ? "underline" : "no-underline")} style={{ color: "#fff" }}>{item.value}</a> : customFieldHref ? <a href={customFieldHref} target="_blank" rel="noopener noreferrer" className="min-w-0 underline [overflow-wrap:anywhere]" style={{ color: "#fff" }}>{item.value}</a> : <span className="min-w-0 [overflow-wrap:anywhere]" style={{ color: "#fff" }}>{item.value}</span>}
                                 </div>
                             ) : (
                                 <div className="flex min-w-0 items-start gap-2" style={{ color: "#fff" }}>
                                     {!item.custom && <span className="shrink-0" style={{ color: "#fff" }}>{t(`basicPanel.basicFields.${item.key}`)}:</span>}
                                     {item.custom && shouldShowCustomFieldLabelPrefix(item) && <span className="shrink-0" style={{ color: "#fff" }}>{item.label}:</span>}
-                                    {customFieldHref ? <a href={customFieldHref} target="_blank" rel="noopener noreferrer" className="min-w-0 underline [overflow-wrap:anywhere]" suppressHydrationWarning style={{ color: "#fff" }}>{item.value}</a> : <span className="min-w-0 [overflow-wrap:anywhere]" suppressHydrationWarning style={{ color: "#fff" }}>{item.value}</span>}
+                                    {customFieldHref ? <a href={customFieldHref} target="_blank" rel="noopener noreferrer" className="min-w-0 underline [overflow-wrap:anywhere]" suppressHydrationWarning style={{ color: "#fff" }}>{item.value}</a> : <span className={cn("min-w-0 [overflow-wrap:anywhere]", item.key === "email" && basic.emailUnderline && "underline")} suppressHydrationWarning style={{ color: "#fff" }}>{item.value}</span>}
                                 </div>
                             )}
                         </motion.div>
@@ -113,4 +113,4 @@ const BaseInfo = ({ basic = {} as BasicInfo, globalSettings, template }: BaseInf
     );
 };
 
-export default BaseInfo;
+export default React.memo(BaseInfo);

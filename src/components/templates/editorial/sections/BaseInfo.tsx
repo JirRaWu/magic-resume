@@ -1,9 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
-import * as Icons from "lucide-react";
+import { getResumeIcon } from "../../shared/resumeIcons";
 import { BasicInfo, GlobalSettings, getBorderRadiusValue } from "@/types/resume";
 import SectionWrapper from "../../shared/SectionWrapper";
-import { formatDateString } from "@/lib/utils";
+import { cn, formatDateString } from "@/lib/utils";
 import { useLocale, useTranslations } from "@/i18n/compat/client";
 import { getCustomFieldDisplayText, getCustomFieldHref, shouldShowCustomFieldLabelPrefix } from "@/lib/customField";
 
@@ -57,7 +57,7 @@ const BaseInfo: React.FC<BaseInfoProps> = ({ basic, globalSettings }) => {
   const titleField = basic.fieldOrder?.find((f) => f.key === "title") || { visible: true };
 
   const getIcon = (iconName: string | undefined) => {
-    const IconComponent = Icons[iconName as keyof typeof Icons] as React.ElementType;
+    const IconComponent = getResumeIcon(iconName);
     return IconComponent ? <IconComponent className="h-3.5 w-3.5 shrink-0" /> : null;
   };
 
@@ -125,7 +125,7 @@ const BaseInfo: React.FC<BaseInfoProps> = ({ basic, globalSettings }) => {
                   )}
                   <div className="min-w-0">
                     {item.key === "email" ? (
-                      <a href={`mailto:${item.value}`} className="block min-w-0 transition-colors [overflow-wrap:anywhere] hover:text-black">
+                      <a href={`mailto:${item.value}`} className={cn("block min-w-0 transition-colors [overflow-wrap:anywhere] hover:text-black", basic.emailUnderline ? "underline" : "no-underline")}>
                         {globalSettings?.useIconMode ? "" : `${t(`basicPanel.basicFields.${item.key}`)}: `}
                         {item.value}
                       </a>
@@ -161,4 +161,4 @@ const BaseInfo: React.FC<BaseInfoProps> = ({ basic, globalSettings }) => {
   );
 };
 
-export default BaseInfo;
+export default React.memo(BaseInfo);

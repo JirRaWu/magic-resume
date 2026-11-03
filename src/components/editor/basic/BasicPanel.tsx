@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { PlusCircle, GripVertical, Trash2, Eye, EyeOff } from "lucide-react";
+import { PlusCircle, GripVertical, Trash2, Eye, EyeOff, Underline } from "lucide-react";
 import { Reorder, AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "@/i18n/compat/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PhotoUpload from "@/components/shared/PhotoSelector";
 import IconSelector from "../IconSelector";
 import AlignSelector from "./AlignSelector";
@@ -28,7 +29,7 @@ const itemAnimations = {
   transition: { type: "spring", stiffness: 500, damping: 50, mass: 1 },
 };
 
-const CustomField: React.FC<CustomFieldProps> = ({
+const CustomField: React.FC<CustomFieldProps> = React.memo(({
   field,
   onUpdate,
   onDelete,
@@ -152,11 +153,163 @@ const CustomField: React.FC<CustomFieldProps> = ({
       </motion.div>
     </Reorder.Item>
   );
-};
+});
+
+interface BasicFieldRowProps {
+  field: BasicFieldType;
+  value: string;
+  selectedIcon: string;
+  labelText: string;
+  emailUnderline?: boolean;
+  emailUnderlineLabel?: string;
+  onValueChange: (key: BasicFieldType["key"], value: string) => void;
+  onIconChange: (key: BasicFieldType["key"], icon: string) => void;
+  onToggleEmailUnderline?: () => void;
+  onToggleVisibility: (fieldId: string, isVisible: boolean) => void;
+  onDelete: (fieldId: string) => void;
+  onReorderEnd: () => void;
+}
+
+const BasicFieldRow: React.FC<BasicFieldRowProps> = React.memo(
+  ({
+    field,
+    value,
+    selectedIcon,
+    labelText,
+    emailUnderline,
+    emailUnderlineLabel,
+    onValueChange,
+    onIconChange,
+    onToggleEmailUnderline,
+    onToggleVisibility,
+    onDelete,
+    onReorderEnd,
+  }) => {
+    return (
+      <Reorder.Item
+        value={field}
+        id={field.id}
+        className="group touch-none list-none"
+        dragListener={field.key !== "name" && field.key !== "title"}
+        onDragEnd={onReorderEnd}
+      >
+        <motion.div
+          {...itemAnimations}
+          className={cn(
+            "flex items-center gap-2 px-3 py-4",
+            "bg-card",
+            "rounded-lg ",
+            "transition-all duration-200",
+            !field.visible && "opacity-75"
+          )}
+        >
+          {field.key !== "name" && field.key !== "title" && (
+            <div className="shrink-0">
+              <GripVertical
+                className={cn(
+                  "w-5 h-5 cursor-grab active:cursor-grabbing",
+                  "text-muted-foreground",
+                  "hover:text-foreground",
+                  "transition-colors duration-200"
+                )}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-1 min-w-0 items-center">
+            {field.key !== "name" && field.key !== "title" && (
+              <IconSelector
+                value={selectedIcon}
+                onChange={(icon) => onIconChange(field.key, icon)}
+              />
+            )}
+            <div className="w-14 shrink-0 ml-1 text-sm font-medium text-foreground">
+              {labelText}
+            </div>
+            <div className="relative flex-1 min-w-0">
+              <Field
+                label=""
+                value={value}
+                onChange={(nextValue) => onValueChange(field.key, nextValue)}
+                placeholder={`请输入${field.label}`}
+                type={field.type}
+                className={field.key === "email" ? "pr-12" : undefined}
+              />
+              {field.key === "email" && (
+                <div
+                  className="absolute right-1 top-1/2 flex h-5 -translate-y-1/2 items-center border-l border-border pl-1"
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={emailUnderlineLabel}
+                          aria-pressed={emailUnderline ?? false}
+                          className="h-7 w-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90"
+                          onClick={onToggleEmailUnderline}
+                        >
+                          <Underline className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        className="border-0 bg-foreground px-2 py-1 text-xs text-background"
+                      >
+                        {emailUnderlineLabel}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "shrink-0 h-8 px-2",
+                "text-neutral-500 dark:text-muted-foreground",
+                "hover:text-neutral-700 dark:hover:text-foreground"
+              )}
+              onClick={() => onToggleVisibility(field.id, !field.visible)}
+            >
+              {field.visible ? (
+                <Eye className="w-4 h-4 text-primary" />
+              ) : (
+                <EyeOff className="w-4 h-4" />
+              )}
+            </Button>
+
+            {field.key !== "name" && field.key !== "title" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "shrink-0 h-8 px-2",
+                  "text-neutral-500 dark:text-muted-foreground",
+                  "hover:text-red-600 dark:hover:text-red-400"
+                )}
+                onClick={() => onDelete(field.id)}
+              >
+                <Trash2 className="w-4 h-4 text-red-400" />
+              </Button>
+            )}
+          </div>
+        </motion.div>
+      </Reorder.Item>
+    );
+  }
+);
 
 const BasicPanel: React.FC = () => {
-  const { activeResume, updateBasicInfo } = useResumeStore();
-  const { basic } = activeResume || {};
+  const basic = useResumeStore((state) => state.activeResume?.basic);
+  const updateBasicInfo = useResumeStore((state) => state.updateBasicInfo);
   const [customFields, setCustomFields] = useState<CustomFieldType[]>(
     basic?.customFields?.map((field) => ({
       ...field,
@@ -184,10 +337,10 @@ const BasicPanel: React.FC = () => {
     customFieldsRef.current = customFields;
   }, [customFields]);
 
-  const handleBasicReorder = (newOrder: BasicFieldType[]) => {
+  const handleBasicReorder = useCallback((newOrder: BasicFieldType[]) => {
     basicFieldsRef.current = newOrder;
     setBasicFields(newOrder);
-  };
+  }, []);
 
   const commitBasicReorder = useCallback(() => {
     updateBasicInfo({
@@ -195,35 +348,74 @@ const BasicPanel: React.FC = () => {
     });
   }, [updateBasicInfo]);
 
-  const toggleFieldVisibility = (fieldId: string, isVisible: boolean) => {
-    const newFields = basicFields.map((field) =>
-      field.id === fieldId ? { ...field, visible: isVisible } : field
-    );
-    setBasicFields(newFields);
-    updateBasicInfo({
-      ...basic,
-      fieldOrder: newFields,
-    });
-  };
+  const handleFieldValueChange = useCallback(
+    (key: BasicFieldType["key"], value: string) => {
+      updateBasicInfo({
+        [key]: value,
+      });
+    },
+    [updateBasicInfo]
+  );
 
-  const deleteBasicField = (fieldId: string) => {
-    const fieldToDelete = basicFields.find((field) => field.id === fieldId);
-    if (
-      fieldToDelete &&
-      (fieldToDelete.key === "name" || fieldToDelete.key === "title")
-    ) {
-      return;
-    }
+  const handleFieldIconChange = useCallback(
+    (key: BasicFieldType["key"], icon: string) => {
+      const currentIcons =
+        useResumeStore.getState().activeResume?.basic?.icons || {};
+      updateBasicInfo({
+        icons: {
+          ...currentIcons,
+          [key]: icon,
+        },
+      });
+    },
+    [updateBasicInfo]
+  );
 
-    const updatedFields = basicFields.filter((field) => field.id !== fieldId);
-    setBasicFields(updatedFields);
-    updateBasicInfo({
-      ...basic,
-      fieldOrder: updatedFields,
-    });
-  };
+  const handleToggleEmailUnderline = useCallback(() => {
+    const currentUnderline =
+      useResumeStore.getState().activeResume?.basic?.emailUnderline ?? false;
+    updateBasicInfo({ emailUnderline: !currentUnderline });
+  }, [updateBasicInfo]);
 
-  const addCustomField = () => {
+  const toggleFieldVisibility = useCallback(
+    (fieldId: string, isVisible: boolean) => {
+      const newFields = basicFieldsRef.current.map((field) =>
+        field.id === fieldId ? { ...field, visible: isVisible } : field
+      );
+      basicFieldsRef.current = newFields;
+      setBasicFields(newFields);
+      updateBasicInfo({
+        fieldOrder: newFields,
+      });
+    },
+    [updateBasicInfo]
+  );
+
+  const deleteBasicField = useCallback(
+    (fieldId: string) => {
+      const fieldToDelete = basicFieldsRef.current.find(
+        (field) => field.id === fieldId
+      );
+      if (
+        fieldToDelete &&
+        (fieldToDelete.key === "name" || fieldToDelete.key === "title")
+      ) {
+        return;
+      }
+
+      const updatedFields = basicFieldsRef.current.filter(
+        (field) => field.id !== fieldId
+      );
+      basicFieldsRef.current = updatedFields;
+      setBasicFields(updatedFields);
+      updateBasicInfo({
+        fieldOrder: updatedFields,
+      });
+    },
+    [updateBasicInfo]
+  );
+
+  const addCustomField = useCallback(() => {
     const fieldToAdd: CustomFieldType = {
       id: generateUUID(),
       label: "",
@@ -232,151 +424,55 @@ const BasicPanel: React.FC = () => {
       visible: true,
       displayLabel: false,
     };
-    const updatedFields = [...customFields, fieldToAdd];
+    const updatedFields = [...customFieldsRef.current, fieldToAdd];
+    customFieldsRef.current = updatedFields;
     setCustomFields(updatedFields);
     updateBasicInfo({
-      ...basic,
       customFields: updatedFields,
     });
-  };
+  }, [updateBasicInfo]);
 
-  const updateCustomField = (updatedField: CustomFieldType) => {
-    const updatedFields = customFields.map((field) =>
-      field.id === updatedField.id ? updatedField : field
-    );
-    setCustomFields(updatedFields);
-    updateBasicInfo({
-      ...basic,
-      customFields: updatedFields,
-    });
-  };
+  const updateCustomField = useCallback(
+    (updatedField: CustomFieldType) => {
+      const updatedFields = customFieldsRef.current.map((field) =>
+        field.id === updatedField.id ? updatedField : field
+      );
+      customFieldsRef.current = updatedFields;
+      setCustomFields(updatedFields);
+      updateBasicInfo({
+        customFields: updatedFields,
+      });
+    },
+    [updateBasicInfo]
+  );
 
-  const deleteCustomField = (id: string) => {
-    const updatedFields = customFields.filter((field) => field.id !== id);
-    setCustomFields(updatedFields);
-    updateBasicInfo({
-      ...basic,
-      customFields: updatedFields,
-    });
-  };
+  const deleteCustomField = useCallback(
+    (id: string) => {
+      const updatedFields = customFieldsRef.current.filter(
+        (field) => field.id !== id
+      );
+      customFieldsRef.current = updatedFields;
+      setCustomFields(updatedFields);
+      updateBasicInfo({
+        customFields: updatedFields,
+      });
+    },
+    [updateBasicInfo]
+  );
 
-  const handleCustomFieldsReorder = (newOrder: CustomFieldType[]) => {
-    customFieldsRef.current = newOrder;
-    setCustomFields(newOrder);
-  };
+  const handleCustomFieldsReorder = useCallback(
+    (newOrder: CustomFieldType[]) => {
+      customFieldsRef.current = newOrder;
+      setCustomFields(newOrder);
+    },
+    []
+  );
 
   const commitCustomFieldsReorder = useCallback(() => {
     updateBasicInfo({
       customFields: customFieldsRef.current,
     });
   }, [updateBasicInfo]);
-
-  const renderBasicField = (field: BasicFieldType) => {
-    const selectedIcon = basic?.icons?.[field.key] || "User";
-
-    return (
-      <Reorder.Item
-        value={field}
-        id={field.id}
-        key={field.id}
-        className="group touch-none list-none"
-        dragListener={field.key !== "name" && field.key !== "title"}
-        onDragEnd={commitBasicReorder}
-      >
-        <motion.div
-          {...itemAnimations}
-          className={cn(
-            "flex items-center gap-4 p-4 pr-3",
-            "bg-card",
-            "rounded-lg ",
-            "transition-all duration-200",
-            !field.visible && "opacity-75"
-          )}
-        >
-          {field.key !== "name" && field.key !== "title" && (
-            <div className="shrink-0">
-              <GripVertical
-                className={cn(
-                  "w-5 h-5 cursor-grab active:cursor-grabbing",
-                  "text-muted-foreground",
-                  "hover:text-foreground",
-                  "transition-colors duration-200"
-                )}
-              />
-            </div>
-          )}
-
-          <div className="flex flex-1 min-w-0 items-center">
-            {field.key !== "name" && field.key !== "title" && (
-              <IconSelector
-                value={selectedIcon}
-                onChange={(value) => {
-                  updateBasicInfo({
-                    ...basic,
-                    icons: {
-                      ...(basic?.icons || {}),
-                      [field.key]: value,
-                    },
-                  });
-                }}
-              />
-            )}
-            <div className=" w-[80px] ml-[4px] text-sm font-medium text-foreground">
-              {t(`basicFields.${field.key}`)}
-            </div>
-            <div className="flex-1">
-              <Field
-                label=""
-                value={(basic?.[field.key] as string) ?? ""}
-                onChange={(value) =>
-                  updateBasicInfo({
-                    ...basic,
-                    [field.key]: value,
-                  })
-                }
-                placeholder={`请输入${field.label}`}
-                type={field.type}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "shrink-0 h-8 px-2",
-                "text-neutral-500 dark:text-muted-foreground",
-                "hover:text-neutral-700 dark:hover:text-foreground"
-              )}
-              onClick={() => toggleFieldVisibility(field.id, !field.visible)}
-            >
-              {field.visible ? (
-                <Eye className="w-4 h-4 text-primary" />
-              ) : (
-                <EyeOff className="w-4 h-4" />
-              )}
-            </Button>
-
-            {field.key !== "name" && field.key !== "title" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "shrink-0 h-8 px-2",
-                  "text-neutral-500 dark:text-muted-foreground",
-                  "hover:text-red-600 dark:hover:text-red-400"
-                )}
-                onClick={() => deleteBasicField(field.id)}
-              >
-                <Trash2 className="w-4 h-4 text-red-400" />
-              </Button>
-            )}
-          </div>
-        </motion.div>
-      </Reorder.Item>
-    );
-  };
 
   return (
     <div className="space-y-6 p-6">
@@ -424,7 +520,35 @@ const BasicPanel: React.FC = () => {
                       onReorder={handleBasicReorder}
                       className="space-y-3"
                     >
-                      {basicFields.map((field) => renderBasicField(field))}
+                      {basicFields.map((field) => (
+                        <BasicFieldRow
+                          key={field.id}
+                          field={field}
+                          value={(basic?.[field.key] as string) ?? ""}
+                          selectedIcon={basic?.icons?.[field.key] || "User"}
+                          labelText={t(`basicFields.${field.key}`)}
+                          emailUnderline={
+                            field.key === "email"
+                              ? (basic?.emailUnderline ?? false)
+                              : undefined
+                          }
+                          emailUnderlineLabel={
+                            field.key === "email"
+                              ? t("emailUnderline")
+                              : undefined
+                          }
+                          onValueChange={handleFieldValueChange}
+                          onIconChange={handleFieldIconChange}
+                          onToggleEmailUnderline={
+                            field.key === "email"
+                              ? handleToggleEmailUnderline
+                              : undefined
+                          }
+                          onToggleVisibility={toggleFieldVisibility}
+                          onDelete={deleteBasicField}
+                          onReorderEnd={commitBasicReorder}
+                        />
+                      ))}
                     </Reorder.Group>
                   </AnimatePresence>
                 </motion.div>

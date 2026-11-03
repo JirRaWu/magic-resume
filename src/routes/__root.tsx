@@ -3,19 +3,16 @@ import {
   HeadContent,
   Outlet,
   Scripts,
-  useLocation,
+  useRouterState,
 } from "@tanstack/react-router";
 import appCss from "../app/globals.css?url";
-import appFontCss from "../app/font.css?url";
-import tiptapCss from "../styles/tiptap.scss?url";
 import landingCss from "@/components/home/landing.css?url";
-import sonnerCss from "sonner/dist/styles.css?url";
+import offerinCss from "@/components/offerin/offerin.scss?url";
 import { NextIntlClientProvider } from "@/i18n/compat/client";
 import { useEffect, useState } from "react";
 import zhMessages from "@/i18n/locales/zh.json";
 import enMessages from "@/i18n/locales/en.json";
 import { Providers } from "@/app/providers";
-import { Toaster } from "@/components/ui/sonner";
 import { getLocaleFromPathname, getPreferredLocale } from "@/i18n/runtime";
 import { LOCALE_CHANGE_EVENT } from "@/hooks/useLocaleSwitch";
 import type { Locale } from "@/i18n/config";
@@ -40,23 +37,15 @@ export const Route = createRootRoute({
         rel: "stylesheet",
         href: appCss,
       },
-      {
-        rel: "stylesheet",
-        href: appFontCss,
-      },
-      {
-        rel: "stylesheet",
-        href: tiptapCss,
-      },
       // Keep landing styles ready before client-side navigation renders the page.
       {
         rel: "stylesheet",
         href: landingCss,
       },
-      // React owns this link, so toast styles survive a document remount.
+      // Load before route navigation, and keep one stylesheet through hydration.
       {
         rel: "stylesheet",
-        href: sonnerCss,
+        href: offerinCss,
       },
     ],
   }),
@@ -65,13 +54,17 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const pathname = useLocation({
-    select: (location) => location.pathname,
+  // Follow the resolved location so the landing theme only changes after the
+  // outlet has actually left the landing page, not while the next route loads.
+  const pathname = useRouterState({
+    select: (state) => (state.resolvedLocation ?? state.location).pathname,
   });
   const landingLocale = getLocaleFromPathname(pathname);
   const isLandingPage =
     landingLocale !== null &&
     pathname.replace(/\/$/, "") === `/${landingLocale}`;
+  const isOfferInPage = pathname.includes("/offerin");
+  const forceLight = isLandingPage || isOfferInPage;
 
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale(pathname));
 
@@ -114,10 +107,9 @@ function RootComponent() {
           messages={messages}
           timeZone="Asia/Shanghai"
         >
-          <Providers forcedTheme={isLandingPage ? "light" : undefined}>
+          <Providers forcedTheme={forceLight ? "light" : undefined}>
             <ReactGrab />
             <Outlet />
-            <Toaster position="top-center" richColors />
           </Providers>
         </NextIntlClientProvider>
         <Scripts />
